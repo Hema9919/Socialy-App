@@ -102,7 +102,9 @@ export default function PostCard({ post }) {
       setComment("");
       setCommentImage(null);
       setCommentPreview("");
-
+      queryClient.invalidateQueries({
+        queryKey: ["getProfilePosts"],
+      });
       queryClient.invalidateQueries({
         queryKey: ["posts"],
       });
@@ -150,7 +152,9 @@ export default function PostCard({ post }) {
       setEditComment("");
       setEditCommentImage(null);
       setEditCommentPreview("");
-
+      queryClient.invalidateQueries({
+        queryKey: ["getProfilePosts"],
+      });
       queryClient.invalidateQueries({
         queryKey: ["posts"],
       });
@@ -186,7 +190,9 @@ export default function PostCard({ post }) {
       toast.success("Comment deleted successfully");
 
       setShowDeleteConfirm(false);
-
+      queryClient.invalidateQueries({
+        queryKey: ["getProfilePosts"],
+      });
       queryClient.invalidateQueries({
         queryKey: ["posts"],
       });
@@ -305,7 +311,7 @@ export default function PostCard({ post }) {
       setShowEditPost(false);
       setEditPostImage(null);
       setEditPostPreview("");
-         queryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: ["getPosts"],
       });
       queryClient.invalidateQueries({
@@ -343,7 +349,7 @@ export default function PostCard({ post }) {
       toast.success("Post deleted successfully");
       setShowPostMenu(false);
       setShowDeleteConfirm(false);
-         queryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: ["getPosts"],
       });
       queryClient.invalidateQueries({
