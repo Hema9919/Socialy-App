@@ -6,7 +6,6 @@ import {
   MessageCircle,
   MoreHorizontal,
   Share2,
-  UserRound,
   Send,
   Image as ImageIcon,
   X,
@@ -15,17 +14,18 @@ import {
   Save,
   Loader2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
 import { UserContext } from "../../context/UserContext";
-import { useNavigate } from "react-router-dom";
+
 export default function PostCard({ post }) {
   const { userData } = useContext(UserContext);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
   // =========================
   // States
   // =========================
@@ -37,13 +37,16 @@ export default function PostCard({ post }) {
   const [editComment, setEditComment] = useState("");
   const [editCommentImage, setEditCommentImage] = useState(null);
   const [editCommentPreview, setEditCommentPreview] = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteCommentConfirm, setShowDeleteCommentConfirm] =
+    useState(false);
 
+  const [showDeletePostConfirm, setShowDeletePostConfirm] = useState(false);
   const [showPostMenu, setShowPostMenu] = useState(false);
   const [showEditPost, setShowEditPost] = useState(false);
   const [editPostBody, setEditPostBody] = useState(post.body || "");
   const [editPostImage, setEditPostImage] = useState(null);
   const [editPostPreview, setEditPostPreview] = useState("");
+
   // =========================
   // Dates
   // =========================
@@ -59,7 +62,7 @@ export default function PostCard({ post }) {
   });
 
   // =========================
-  // Current Comment Owner
+  // Current Comment / Post Owner
   // =========================
   const commentCreatorId = post.topComment?.commentCreator?._id;
 
@@ -70,13 +73,20 @@ export default function PostCard({ post }) {
 
   const isPostOwner =
     userData?._id && post.user?._id ? userData._id === post.user._id : false;
+
+  const invalidatePostQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["getPosts"] });
+    queryClient.invalidateQueries({ queryKey: ["posts"] });
+    queryClient.invalidateQueries({ queryKey: ["getProfilePosts"] });
+    queryClient.invalidateQueries({ queryKey: ["singlePost", post.id] });
+  };
+
   // ============================================================
   // CREATE COMMENT
   // ============================================================
   const createCommentMutation = useMutation({
     mutationFn: async () => {
       const formData = new FormData();
-
       formData.append("content", comment.trim());
 
       if (commentImage) {
@@ -102,16 +112,7 @@ export default function PostCard({ post }) {
       setComment("");
       setCommentImage(null);
       setCommentPreview("");
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["posts"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
+      invalidatePostQueries();
     },
 
     onError: (error) => {
@@ -125,7 +126,6 @@ export default function PostCard({ post }) {
   const updateCommentMutation = useMutation({
     mutationFn: async () => {
       const formData = new FormData();
-
       formData.append("content", editComment.trim());
 
       if (editCommentImage) {
@@ -152,20 +152,13 @@ export default function PostCard({ post }) {
       setEditComment("");
       setEditCommentImage(null);
       setEditCommentPreview("");
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["posts"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
+      invalidatePostQueries();
     },
 
     onError: (error) => {
-      toast.error(error?.response?.data?.message || "Failed to update comment");
+      toast.error(
+        error?.response?.data?.message || "Failed to update comment",
+      );
     },
   });
 
@@ -189,21 +182,14 @@ export default function PostCard({ post }) {
     onSuccess: () => {
       toast.success("Comment deleted successfully");
 
-      setShowDeleteConfirm(false);
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["posts"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
+      setShowDeleteCommentConfirm(false);
+      invalidatePostQueries();
     },
 
     onError: (error) => {
-      toast.error(error?.response?.data?.message || "Failed to delete comment");
+      toast.error(
+        error?.response?.data?.message || "Failed to delete comment",
+      );
     },
   });
 
@@ -212,7 +198,6 @@ export default function PostCard({ post }) {
   // ============================================================
   const handleCommentImageChange = (e) => {
     const file = e.target.files?.[0];
-
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -241,7 +226,6 @@ export default function PostCard({ post }) {
 
   const handleEditCommentImageChange = (e) => {
     const file = e.target.files?.[0];
-
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -267,9 +251,6 @@ export default function PostCard({ post }) {
     createCommentMutation.mutate();
   };
 
-  // ============================================================
-  // UPDATE COMMENT SUBMIT
-  // ============================================================
   const handleEditCommentSubmit = (e) => {
     e.preventDefault();
 
@@ -280,13 +261,13 @@ export default function PostCard({ post }) {
 
     updateCommentMutation.mutate();
   };
+
   // ============================================================
   // UPDATE POST
   // ============================================================
   const updatePostMutation = useMutation({
     mutationFn: async () => {
       const formData = new FormData();
-
       formData.append("body", editPostBody.trim());
 
       if (editPostImage) {
@@ -311,24 +292,14 @@ export default function PostCard({ post }) {
       setShowEditPost(false);
       setEditPostImage(null);
       setEditPostPreview("");
-      queryClient.invalidateQueries({
-        queryKey: ["getPosts"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["posts"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["singlePost", post.id],
-      });
+      invalidatePostQueries();
     },
 
     onError: (error) => {
       toast.error(error?.response?.data?.message || "Failed to update post");
     },
   });
+
   // ============================================================
   // DELETE POST
   // ============================================================
@@ -345,31 +316,25 @@ export default function PostCard({ post }) {
 
       return data;
     },
+
     onSuccess: () => {
       toast.success("Post deleted successfully");
       setShowPostMenu(false);
-      setShowDeleteConfirm(false);
-      queryClient.invalidateQueries({
-        queryKey: ["getPosts"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["posts"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
+      setShowDeletePostConfirm(false);
+      invalidatePostQueries();
       navigate("/home");
     },
+
     onError: (error) => {
       toast.error(error?.response?.data?.message || "Failed to delete post");
     },
   });
+
   // ============================================================
-  // UPDATE IMAGE
+  // EDIT POST IMAGE / OPEN EDIT
   // ============================================================
   const handleEditPostImage = (e) => {
     const file = e.target.files?.[0];
-
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -380,6 +345,7 @@ export default function PostCard({ post }) {
     setEditPostImage(file);
     setEditPostPreview(URL.createObjectURL(file));
   };
+
   const openEditPost = (e) => {
     e.stopPropagation();
 
@@ -389,8 +355,9 @@ export default function PostCard({ post }) {
     setShowEditPost(true);
     setShowPostMenu(false);
   };
+
   // ============================================================
-  // LIKE UNLIKE
+  // LIKE / UNLIKE
   // ============================================================
   const likePostMutation = useMutation({
     mutationFn: async () => {
@@ -408,23 +375,16 @@ export default function PostCard({ post }) {
     },
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["posts"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["getProfilePosts"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["singlePost", post.id],
-      });
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["getProfilePosts"] });
+      queryClient.invalidateQueries({ queryKey: ["singlePost", post.id] });
     },
 
     onError: (error) => {
       toast.error(error?.response?.data?.message || "Failed to like post");
     },
   });
+
   return (
     <article className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white mb-10 w-full rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-300 overflow-hidden">
       {/* ======================================================
@@ -440,7 +400,6 @@ export default function PostCard({ post }) {
                 alt={post.user?.name || "User"}
                 className="w-12 h-12 rounded-2xl object-cover ring-4 ring-slate-50"
               />
-
               <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-[3px] border-white" />
             </div>
 
@@ -451,11 +410,8 @@ export default function PostCard({ post }) {
 
               <div className="flex items-center gap-2 text-sm text-slate-400 mt-0.5">
                 <span className="truncate">@{post.user?.username}</span>
-
                 <span className="w-1 h-1 rounded-full bg-slate-300" />
-
                 <Clock3 size={13} />
-
                 <span className="whitespace-nowrap">
                   {formattedDate} · {formattedTime}
                 </span>
@@ -497,7 +453,7 @@ export default function PostCard({ post }) {
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowPostMenu(false);
-                        setShowDeleteConfirm(true);
+                        setShowDeletePostConfirm(true);
                       }}
                       className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 transition"
                     >
@@ -554,7 +510,6 @@ export default function PostCard({ post }) {
             <span>
               {post.likesCount} {post.likesCount === 1 ? "Like" : "Likes"}
             </span>
-
             <span>
               {post.commentsCount}{" "}
               {post.commentsCount === 1 ? "Comment" : "Comments"}
@@ -583,9 +538,10 @@ export default function PostCard({ post }) {
         >
           <Heart
             size={19}
-            className={post.likesCount > 0 ? "fill-rose-500 text-rose-500" : ""}
+            className={
+              post.likesCount > 0 ? "fill-rose-500 text-rose-500" : ""
+            }
           />
-
           <span className="hidden sm:block text-sm font-semibold">Like</span>
         </button>
 
@@ -598,8 +554,9 @@ export default function PostCard({ post }) {
           className="flex-1 h-11 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all"
         >
           <MessageCircle size={19} />
-
-          <span className="hidden sm:block text-sm font-semibold">Comment</span>
+          <span className="hidden sm:block text-sm font-semibold">
+            Comment
+          </span>
         </button>
 
         {/* Share */}
@@ -608,7 +565,6 @@ export default function PostCard({ post }) {
           className="flex-1 h-11 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:bg-purple-50 hover:text-purple-600 transition-all"
         >
           <Share2 size={19} />
-
           <span className="hidden sm:block text-sm font-semibold">Share</span>
         </button>
 
@@ -716,14 +672,12 @@ export default function PostCard({ post }) {
       {post.topComment && (
         <div className="mx-5 sm:mx-6 mb-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
           <div className="flex items-start gap-3">
-            {/* Avatar */}
             <img
               src={post.topComment.commentCreator?.photo}
               alt={post.topComment.commentCreator?.name || "Comment creator"}
               className="w-9 h-9 rounded-full object-cover shrink-0 ring-2 ring-white shadow-sm"
             />
 
-            {/* User Info */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -731,7 +685,6 @@ export default function PostCard({ post }) {
                     <p className="text-sm font-bold text-slate-800">
                       {post.topComment.commentCreator?.name}
                     </p>
-
                     <span className="text-xs text-slate-400">
                       @{post.topComment.commentCreator?.username}
                     </span>
@@ -750,7 +703,6 @@ export default function PostCard({ post }) {
                   </p>
                 </div>
 
-                {/* Comment Actions */}
                 {isCommentOwner && (
                   <div className="flex items-center gap-1">
                     <button
@@ -763,7 +715,7 @@ export default function PostCard({ post }) {
 
                     <button
                       type="button"
-                      onClick={() => setShowDeleteConfirm(true)}
+                      onClick={() => setShowDeleteCommentConfirm(true)}
                       className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition"
                     >
                       <Trash2 size={15} />
@@ -772,14 +724,12 @@ export default function PostCard({ post }) {
                 )}
               </div>
 
-              {/* Comment Content */}
               <div className="mt-3">
                 <p className="text-sm text-slate-600 leading-6 break-words">
                   {post.topComment.content}
                 </p>
               </div>
 
-              {/* Comment Image */}
               {post.topComment.image && (
                 <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
                   <img
@@ -806,13 +756,11 @@ export default function PostCard({ post }) {
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-lg rounded-3xl bg-white shadow-2xl overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
                   Edit Comment
                 </h2>
-
                 <p className="mt-1 text-sm text-slate-400">
                   Update your comment.
                 </p>
@@ -903,10 +851,10 @@ export default function PostCard({ post }) {
       {/* ======================================================
           DELETE COMMENT CONFIRMATION
       ======================================================= */}
-      {showDeleteConfirm && post.topComment && (
+      {showDeleteCommentConfirm && post.topComment && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm px-4"
-          onClick={() => setShowDeleteConfirm(false)}
+          onClick={() => setShowDeleteCommentConfirm(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -921,14 +869,14 @@ export default function PostCard({ post }) {
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Are you sure you want to delete this comment? This action cannot
-              be undone.
+              Are you sure you want to delete this comment? This action
+              cannot be undone.
             </p>
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => setShowDeleteCommentConfirm(false)}
                 className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-100"
               >
                 Cancel
@@ -958,8 +906,8 @@ export default function PostCard({ post }) {
       )}
 
       {/* ======================================================
-    EDIT POST MODAL
-======================================================= */}
+          EDIT POST MODAL
+      ======================================================= */}
       {showEditPost && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm px-4"
@@ -969,11 +917,9 @@ export default function PostCard({ post }) {
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-lg rounded-3xl bg-white shadow-2xl overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Edit Post</h2>
-
                 <p className="mt-1 text-sm text-slate-400">
                   Update your post content or image.
                 </p>
@@ -988,7 +934,6 @@ export default function PostCard({ post }) {
               </button>
             </div>
 
-            {/* Body */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1010,7 +955,6 @@ export default function PostCard({ post }) {
                 placeholder="What's on your mind?"
               />
 
-              {/* Current / New Image */}
               {editPostPreview && (
                 <div className="relative mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                   <img
@@ -1032,7 +976,6 @@ export default function PostCard({ post }) {
                 </div>
               )}
 
-              {/* Change Image */}
               <label
                 htmlFor={`edit-post-image-${post.id}`}
                 className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 p-4 text-sm font-semibold text-slate-500 hover:border-blue-400 hover:text-blue-600 transition"
@@ -1055,7 +998,6 @@ export default function PostCard({ post }) {
                 </p>
               )}
 
-              {/* Buttons */}
               <div className="mt-6 flex justify-end gap-3">
                 <button
                   type="button"
@@ -1087,13 +1029,14 @@ export default function PostCard({ post }) {
           </div>
         </div>
       )}
+
       {/* ======================================================
-    DELETE POST CONFIRMATION
-======================================================= */}
-      {showDeleteConfirm && (
+          DELETE POST CONFIRMATION
+      ======================================================= */}
+      {showDeletePostConfirm && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm px-4"
-          onClick={() => setShowDeleteConfirm(false)}
+          onClick={() => setShowDeletePostConfirm(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1106,14 +1049,14 @@ export default function PostCard({ post }) {
             <h2 className="text-lg font-bold text-slate-900">Delete Post?</h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Are you sure you want to delete this post? This action cannot be
-              undone.
+              Are you sure you want to delete this post? This action cannot
+              be undone.
             </p>
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => setShowDeletePostConfirm(false)}
                 className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-100 transition"
               >
                 Cancel
