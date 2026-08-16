@@ -70,7 +70,7 @@ export default function CreatePost() {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       return data;
@@ -78,12 +78,15 @@ export default function CreatePost() {
 
     onSuccess: () => {
       toast.success("Post created successfully!");
-
       setBody("");
       setImage(null);
       setPreview("");
       setShowFeelingPicker(false);
+      // getpost();
 
+      queryClient.invalidateQueries({
+        queryKey: ["getPosts"],
+      });
       queryClient.invalidateQueries({
         queryKey: ["posts"],
       });
@@ -94,9 +97,7 @@ export default function CreatePost() {
     },
 
     onError: (error) => {
-      toast.error(
-        error?.response?.data?.message || "Failed to create post"
-      );
+      toast.error(error?.response?.data?.message || "Failed to create post");
     },
   });
 
@@ -169,7 +170,7 @@ export default function CreatePost() {
               headers: {
                 Accept: "application/json",
               },
-            }
+            },
           );
 
           const locationName =
@@ -189,7 +190,7 @@ export default function CreatePost() {
           toast.success("Location added to your post");
         } catch (error) {
           const fallbackLocation = `${latitude.toFixed(
-            5
+            5,
           )}, ${longitude.toFixed(5)}`;
 
           setBody((prev) => {
@@ -226,7 +227,7 @@ export default function CreatePost() {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0,
-      }
+      },
     );
   };
 
@@ -259,8 +260,8 @@ export default function CreatePost() {
           </h1>
 
           <p className="mt-2 text-sm sm:text-base text-blue-100 max-w-xl leading-6">
-            Share your thoughts, updates, or anything you want your friends
-            and community to see.
+            Share your thoughts, updates, or anything you want your friends and
+            community to see.
           </p>
         </div>
 
@@ -283,9 +284,7 @@ export default function CreatePost() {
             />
 
             <div>
-              <h2 className="font-bold text-slate-900">
-                {userData?.name}
-              </h2>
+              <h2 className="font-bold text-slate-900">{userData?.name}</h2>
 
               <div className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
                 <Globe2 size={13} />
@@ -331,7 +330,6 @@ export default function CreatePost() {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-
               {/* Photo */}
               <label
                 htmlFor="post-image"
@@ -353,9 +351,7 @@ export default function CreatePost() {
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowFeelingPicker((prev) => !prev)
-                  }
+                  onClick={() => setShowFeelingPicker((prev) => !prev)}
                   className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-white hover:text-purple-600 hover:shadow-sm transition"
                 >
                   <SmilePlus size={18} />
@@ -377,9 +373,7 @@ export default function CreatePost() {
 
                       <button
                         type="button"
-                        onClick={() =>
-                          setShowFeelingPicker(false)
-                        }
+                        onClick={() => setShowFeelingPicker(false)}
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100"
                       >
                         <X size={15} />
@@ -417,10 +411,7 @@ export default function CreatePost() {
               >
                 {isGettingLocation ? (
                   <>
-                    <Loader2
-                      size={18}
-                      className="animate-spin"
-                    />
+                    <Loader2 size={18} className="animate-spin" />
                     Getting Location...
                   </>
                 ) : (
@@ -437,9 +428,7 @@ export default function CreatePost() {
           <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <Globe2 size={14} />
-              <span>
-                Your post will be visible to everyone
-              </span>
+              <span>Your post will be visible to everyone</span>
             </div>
 
             <button
@@ -449,10 +438,7 @@ export default function CreatePost() {
             >
               {createPostMutation.isPending ? (
                 <>
-                  <Loader2
-                    size={17}
-                    className="animate-spin"
-                  />
+                  <Loader2 size={17} className="animate-spin" />
                   Publishing...
                 </>
               ) : (

@@ -305,6 +305,9 @@ export default function PostCard({ post }) {
       setShowEditPost(false);
       setEditPostImage(null);
       setEditPostPreview("");
+         queryClient.invalidateQueries({
+        queryKey: ["getPosts"],
+      });
       queryClient.invalidateQueries({
         queryKey: ["posts"],
       });
@@ -340,6 +343,9 @@ export default function PostCard({ post }) {
       toast.success("Post deleted successfully");
       setShowPostMenu(false);
       setShowDeleteConfirm(false);
+         queryClient.invalidateQueries({
+        queryKey: ["getPosts"],
+      });
       queryClient.invalidateQueries({
         queryKey: ["posts"],
       });
